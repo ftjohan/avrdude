@@ -155,6 +155,7 @@ static int linuxspi_gpio_op_wr(PROGRAMMER* pgm, LINUXSPI_GPIO_OP op, int gpio, c
             break;
         case LINUXSPI_GPIO_UNEXPORT:
             sprintf(fn, "/sys/class/gpio/unexport");
+			return 0; // Never unexport, this would disturb group wx permissionsw (in 3.14.41-ti-r63)
             break;
         case LINUXSPI_GPIO_VALUE:
             sprintf(fn, "/sys/class/gpio/gpio%d/value", gpio);
@@ -163,7 +164,7 @@ static int linuxspi_gpio_op_wr(PROGRAMMER* pgm, LINUXSPI_GPIO_OP op, int gpio, c
             fprintf(stderr, "%s: linuxspi_gpio_op_wr(): Unknown op %d", progname, op);
             return -1;
     }
-    
+
     FILE* f = fopen(fn, "w");
     
     if (!f)
@@ -173,7 +174,7 @@ static int linuxspi_gpio_op_wr(PROGRAMMER* pgm, LINUXSPI_GPIO_OP op, int gpio, c
         return -1;
     }
     
-    if (fprintf(f, val) < 0)
+    if (fprintf(f, "%s", val) < 0)
     {
         fprintf(stderr, "%s: linuxspi_gpio_op_wr(): Unable to write file %s with %s", progname, fn, val);
         free(fn); //we no longer need the path
@@ -362,7 +363,7 @@ void linuxspi_initpgm(PROGRAMMER * pgm)
     pgm->disable        = linuxspi_disable;
     pgm->program_enable = linuxspi_program_enable;
     pgm->chip_erase     = linuxspi_chip_erase;
-    pgm->cmd            = linuxspi_cmd;
+    pgm->cmd            = (void *) linuxspi_cmd;
     pgm->open           = linuxspi_open;
     pgm->close          = linuxspi_close;
     pgm->read_byte      = avr_read_byte_default;
